@@ -1,6 +1,6 @@
 #define LCD_2004A
 //#define LCD_I2C_2004A
-
+#define COMPORT_SPEED 19200
 #define PIN_CCW 24   // Поворот против часовой стрелки
 #define PIN_CW 22    // Поворот по часовой стрелки
 #define PIN_UP 26   // Актуатор вверх
@@ -524,7 +524,7 @@ void SerialSend() {
 }
 void setup()
 {
-  Serial1.begin(115200);
+  Serial1.begin(COMPORT_SPEED);
   Serial1.println(String("MOTD:" + String(motd)));
   pinMode(PIN_CCW, OUTPUT);
   pinMode(PIN_CW, OUTPUT);
