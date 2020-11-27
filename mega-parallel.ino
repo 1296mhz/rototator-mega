@@ -59,33 +59,24 @@ String PortRead;
 int azPortTarget = 0;
 int elPortTarget = 0;
 const byte averageFactor = 20;
-String Serial1Name = "                ";
+// String Serial1Name = "                ";
 // 0 - clear, 1 - CW or UP, 2 - CCW or DOWN
 byte azArrow = 0;
 byte elArrow = 0;
 
 char motd[] = " R8CDF ROTATOR 2020 ";
 byte heart[8] = {0b00000, 0b01010, 0b11111, 0b11111, 0b11111, 0b01110, 0b00100, 0b00000};
-
+byte heartOff[8] = {0b00000, 0b01010, 0b11111, 0b11111, 0b11111, 0b01110, 0b00100, 0b00000};
 byte upArrow[8] = {0b00000, 0b00000, 0b00100, 0b01010, 0b10001, 0b00000, 0b00000, 0b00000};
 byte dwArrow[8] = {0b00000, 0b00000, 0b10001, 0b01010, 0b00100, 0b00000, 0b00000, 0b00000};
 
-byte queue[8] = {0b00001,
-                 0b00011,
-                 0b00001,
-                 0b00100,
-                 0b00110,
-                 0b10100,
-                 0b11000,
-                 0b10000
-                };
 
 long previousMillisTimeSWOne = 0; //счетчик прошедшего времени для мигания изменяемых значений.
 long previousMillisTimeSWTwo = 0; //счетчик прошедшего времени для мигания изменяемых значений.
 long intervalTimeSWOne = 500;     //интервал мигания изменяемых значений.
 long intervalTimeSWTwo = 100;     //интервал мигания изменяемых значений.
 long iOperateView = 0;
-
+String nameTarget;
 #if defined(LCD_2004A)
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
@@ -301,6 +292,19 @@ void buttonManual(int az, int el) {
   }
 }
 
+void serialManual() {
+
+  if (Serial1.available())
+  {
+    int inByte = Serial1.read();
+    Serial.write(inByte);
+    if (inByte == 111) {
+      String ser = String("AZ:" + String(azAngle) + "#EL:" + String(elAngle) + "#OP:" + String(operate) + "#AZARROW:" + String(azArrow) + "#ELARROW:" + String(elArrow) + "#MODE:" + String(mode));
+      Serial1.println(ser);
+    }
+  }
+}
+
 String AzElString(int someIntVolue)
 {
   if (someIntVolue < 0)
@@ -464,9 +468,10 @@ void modeView() {
     lcd.setCursor(0, 3);
     lcd.print("PC           ");
     lcd.setCursor(0, 2);
-    lcd.print("SN: ");
-    lcd.setCursor(4, 2);
-    lcd.print(Serial1Name);
+    //lcd.print("SN: ");
+    //lcd.setCursor(4, 2);
+    //lcd.setCursor(0, 2);
+    //lcd.print(Serial1Name);
   } else if (mode == 0) {
     lcd.setCursor(0, 3);
     lcd.print("MANUAL       ");
@@ -504,12 +509,7 @@ void elArrowView() {
   }
 }
 void SerialSend() {
-  // if (Serial1.available())
-  //  {
-
-
   if (prevAz != azAngle || prevEl != elAngle ||  prevAzArrow != azArrow || prevElArrow != elArrow || prevMode != mode || prevOperate != operate) {
-
     String ser = String("AZ:" + String(azAngle) + "#EL:" + String(elAngle) + "#OP:" + String(operate) + "#AZARROW:" + String(azArrow) + "#ELARROW:" + String(elArrow) + "#MODE:" + String(mode));
     Serial1.println(ser);
     prevEl = elAngle;
@@ -519,13 +519,14 @@ void SerialSend() {
     prevMode = mode;
     prevOperate = operate;
   }
-
-  // }
 }
+
 void setup()
 {
   Serial1.begin(COMPORT_SPEED);
   Serial1.println(String("MOTD:" + String(motd)));
+  Serial.begin(9600);
+  Serial.println(String("MOTD:" + String(motd)));
   pinMode(PIN_CCW, OUTPUT);
   pinMode(PIN_CW, OUTPUT);
   pinMode(PIN_UP, OUTPUT);
@@ -541,11 +542,7 @@ void setup()
   pinMode(BTN_CCW, INPUT_PULLUP);
   pinMode(BTN_UP, INPUT_PULLUP);
   pinMode(BTN_DOWN, INPUT_PULLUP);
-
   lcd.begin(20, 4);
-
-
-
 #if defined(LCD_I2C_2004A)
   lcd.backlight();
 #endif
@@ -555,7 +552,7 @@ void setup()
   lcd.createChar(1, heart);
   lcd.createChar(2, upArrow);
   lcd.createChar(3, dwArrow);
-  lcd.createChar(4, queue);
+
 
   // lcd.print("R8CDF ROTATOR 2020 ");
   for (int i = 0; i <= 19; i++) {
@@ -583,7 +580,6 @@ void setup()
   lcd.print("ELT: ");
   lcd.setCursor(9, 1);
   lcd.print("ELA: ");
-  Serial1Name = "                ";
   getSensors();
   operateView();
   modeView();
@@ -601,23 +597,27 @@ void loop()
   modeView();
   azArrowView();
   elArrowView();
+
   if (operate)
   {
     if (mode == 1) {
-
       if (Serial1.available())
       {
         PortRead = Serial1.readString();
-        int buffer_len = PortRead.length() + 1;
-        char port_char_array[buffer_len];
-        char az[7], el[7], sn[16];
+        //        int buffer_len = PortRead.length() + 1;
+        //        char port_char_array[buffer_len];
+        char az[7], el[7], sn[12];
+
         sscanf(PortRead.c_str(), "%s %s %s", &az, &el, &sn);
         azTarget = int(round(atof(az)));
         elTarget = int(round(atof(el)));
-
-        lcd.setCursor(4, 2);
-        lcd.print("                ");
-        Serial1Name = sn;
+        nameTarget = String(sn);
+        lcd.setCursor(0, 2);
+        lcd.print("                    ");
+        lcd.setCursor(0, 2);
+        lcd.print("NAME: ");
+        lcd.setCursor(6, 2);
+        lcd.print(nameTarget.substring(0, 14));
 
         if (azTarget >= 0 && azTarget <= 359)
         {
@@ -628,17 +628,62 @@ void loop()
         {
           elMove = true;
         }
+        Serial1.flush();
       }
     }
+
     if (mode == 0) {
       applyKeys();
       getKeysMain();
-      Serial1Name = "          ";
     }
 
     if (mode == 2) {
       buttonManual(azAngle, elAngle);
-      Serial1Name = "          ";
+
+      if (Serial1.available())
+      {
+        int inByte = Serial1.read();
+        Serial.write(inByte);
+        lcd.setCursor(0, 2);
+        lcd.print(inByte);
+
+        if (inByte == 62 && azAngle < 352)
+        {
+          digitalWrite(PIN_CW, HIGH);
+          azArrow = 1;
+        } else {
+          digitalWrite(PIN_CW, LOW);
+          azArrow = 0;
+        }
+
+        if (inByte == 60 && azAngle > 1)
+        {
+          digitalWrite(PIN_CCW, HIGH);
+          azArrow = 2;
+        } else {
+          digitalWrite(PIN_CCW, LOW);
+          // azArrow = 0;
+        }
+
+        if (inByte == 117 && elAngle <= 99)
+        {
+          digitalWrite(PIN_UP, HIGH);
+          elArrow = 1;
+        } else {
+          digitalWrite(PIN_UP, LOW);
+          elArrow = 0;
+        }
+
+        if (inByte == 100 && elAngle >= 0)
+        {
+          digitalWrite(PIN_DOWN, HIGH);
+          elArrow = 2;
+        } else {
+          digitalWrite(PIN_DOWN, LOW);
+          //  elArrow = 0;
+        }
+      }
+
     }
 
     if (azMove)
