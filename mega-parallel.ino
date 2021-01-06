@@ -745,6 +745,4 @@ void loop()
   strElAngle = AzElString(elAngle);
   // Отображение цели элевации
   strElTarget = AzElString(elTarget);
-
-
 }
