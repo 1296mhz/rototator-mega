@@ -116,14 +116,14 @@ int azSensor()
 {
 
   azAngle = avaregeAprox(analogRead(AZSENSOR));
-  azAngle = int(azAngle / 1024.0 * 360);
+  azAngle = int(azAngle / 1008.0 * 360);
 
-  if (azAngle < 0)
+  if (azAngle < 1)
   {
-    azAngle = 0;
+    azAngle = 1;
   }
 
-  if (azAngle > 359)
+  if (azAngle >= 359)
   {
     azAngle = 359;
   }
@@ -164,14 +164,14 @@ void getKeysMain()
   if (btn(BTN_CW) == 0)
   {
     delay(1);
-    if (azTarget + STEP <= 359)
+    if (azTarget + STEP <= 358)
       azTarget += STEP;
   }
 
   if (btn(BTN_CCW) == 0)
   {
     delay(1);
-    if (azTarget - STEP >= 0)
+    if (azTarget - STEP >= 1)
       azTarget -= STEP;
   }
 
@@ -266,7 +266,7 @@ void getKeysOperate()
 void buttonManual(int az, int el)
 {
 
-  if (btn(BTN_CW) == 0 && az < 352)
+  if (btn(BTN_CW) == 0 && az < 358)
   {
     digitalWrite(PIN_CW, HIGH);
     azArrow = 1;
@@ -277,7 +277,7 @@ void buttonManual(int az, int el)
     azArrow = 0;
   }
 
-  if (btn(BTN_CCW) == 0 && az >= 0)
+  if (btn(BTN_CCW) == 0 && az >= 1)
   {
     digitalWrite(PIN_CCW, HIGH);
     azArrow = 2;
@@ -674,7 +674,7 @@ void loop()
         lcd.setCursor(6, 2);
         lcd.print(nameTarget.substring(0, 14));
 
-        if (azTarget >= 0 && azTarget <= 359)
+        if (azTarget >= 0 && azTarget <= 360)
         {
           azMove = true;
         }
@@ -704,7 +704,7 @@ void loop()
         lcd.setCursor(0, 2);
         lcd.print(inByte);
 
-        if (inByte == 62 && azAngle < 352)
+        if (inByte == 62 && azAngle < 360)
         {
           digitalWrite(PIN_CW, HIGH);
           azArrow = 1;
