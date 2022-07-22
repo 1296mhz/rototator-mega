@@ -1,8 +1,8 @@
 #define LCD_2004A
 //#define LCD_I2C_2004A
 #define COMPORT_SPEED 19200
-#define PIN_CCW 24   // Поворот против часовой стрелки
-#define PIN_CW 22    // Поворот по часовой стрелки
+#define PIN_CCW 24  // Поворот против часовой стрелки
+#define PIN_CW 22   // Поворот по часовой стрелки
 #define PIN_UP 26   // Актуатор вверх
 #define PIN_DOWN 28 // Актуатор вниз
 #define STEP 1      // Шаг
@@ -70,7 +70,6 @@ byte heartOff[8] = {0b00000, 0b01010, 0b11111, 0b11111, 0b11111, 0b01110, 0b0010
 byte upArrow[8] = {0b00000, 0b00000, 0b00100, 0b01010, 0b10001, 0b00000, 0b00000, 0b00000};
 byte dwArrow[8] = {0b00000, 0b00000, 0b10001, 0b01010, 0b00100, 0b00000, 0b00000, 0b00000};
 
-
 long previousMillisTimeSWOne = 0; //счетчик прошедшего времени для мигания изменяемых значений.
 long previousMillisTimeSWTwo = 0; //счетчик прошедшего времени для мигания изменяемых значений.
 long intervalTimeSWOne = 500;     //интервал мигания изменяемых значений.
@@ -85,13 +84,14 @@ LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 #if defined(LCD_I2C_2004A)
 // Wiring: SDA pin is connected to A4 and SCL pin to A5.
 // Connect to LCD via I2C, default address 0x27 (A0-A2 not jumpered)
-#include <Wire.h>              // Library for I2C communication
-#include <LiquidCrystal_I2C.h> // Library for LCD
+#include <Wire.h>                                       // Library for I2C communication
+#include <LiquidCrystal_I2C.h>                          // Library for LCD
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 20, 4); // address, chars, rows.
 #endif
 
-int avaregeAprox(int sensorValue) {
-  if (averageFactor > 0)        // усреднение показаний для устранения "скачков"
+int avaregeAprox(int sensorValue)
+{
+  if (averageFactor > 0) // усреднение показаний для устранения "скачков"
   {
     oldsensorValue = sensorValue;
     return (oldsensorValue * (averageFactor - 1) + sensorValue) / averageFactor;
@@ -135,12 +135,18 @@ int azSensor()
 int elSensor()
 {
   elAngle = avaregeAprox(stabilitySensor(analogRead(ELSENSOR)));
-  elAngle = int(elAngle / 1024.0 * 278);
+  elAngle = int(elAngle / 1024.0 * 277);
   if (elAngle < 0)
   {
     elAngle = 0;
   }
-  if (elAngle > 180)
+
+  if (elAngle >= 89 && elAngle <= 91)
+  {
+    elAngle = 90;
+  }
+
+  if (elAngle >= 110 && elAngle <= 271)
   {
     elAngle = 0;
   }
@@ -173,7 +179,7 @@ void getKeysMain()
   if (btn(BTN_UP) == 0)
   {
     delay(10);
-    if (elTarget + STEP <= 99)
+    if (elTarget + STEP <= 95)
       elTarget += STEP;
   }
 
@@ -205,14 +211,20 @@ void getKeysOperate()
       1 PC
       2 MANUAL BUTTON
   */
-  if (btn(BTN_MODE) == 0) {
-    if (mode == 2) {
+  if (btn(BTN_MODE) == 0)
+  {
+    if (mode == 2)
+    {
       mode = 0;
       azTarget = 300;
       elTarget = 0;
-    } else if (mode == 0) {
+    }
+    else if (mode == 0)
+    {
       mode = 1;
-    } else if (mode == 1) {
+    }
+    else if (mode == 1)
+    {
       mode = 2;
       azTarget = 300;
       elTarget = 0;
@@ -242,7 +254,6 @@ void getKeysOperate()
       digitalWrite(PIN_CCW, LOW);
       digitalWrite(PIN_UP, LOW);
       digitalWrite(PIN_DOWN, LOW);
-
     }
     else
     {
@@ -253,13 +264,16 @@ void getKeysOperate()
   }
 }
 
-void buttonManual(int az, int el) {
+void buttonManual(int az, int el)
+{
 
   if (btn(BTN_CW) == 0 && az < 352)
   {
     digitalWrite(PIN_CW, HIGH);
     azArrow = 1;
-  } else {
+  }
+  else
+  {
     digitalWrite(PIN_CW, LOW);
     azArrow = 0;
   }
@@ -268,37 +282,48 @@ void buttonManual(int az, int el) {
   {
     digitalWrite(PIN_CCW, HIGH);
     azArrow = 2;
-  } else {
+  }
+  else
+  {
     digitalWrite(PIN_CCW, LOW);
     // azArrow = 0;
   }
 
-  if (btn(BTN_UP) == 0 && el <= 140)
+  if (btn(BTN_DOWN) == 0 && el <= 110)
   {
     digitalWrite(PIN_UP, HIGH);
-    elArrow = 1;
-  } else {
+    elArrow = 2;
+  }
+  else
+  {
     digitalWrite(PIN_UP, LOW);
     elArrow = 0;
   }
 
-  if (btn(BTN_DOWN) == 0 && el >= 0)
+  if (btn(BTN_UP) == 0 && el >= 0)
   {
-    digitalWrite(PIN_DOWN, HIGH);
-    elArrow = 2;
-  } else {
+    if (el <= 89)
+    {
+      digitalWrite(PIN_DOWN, HIGH);
+      elArrow = 1;
+    }
+  }
+  else
+  {
     digitalWrite(PIN_DOWN, LOW);
     //  elArrow = 0;
   }
 }
 
-void serialManual() {
+void serialManual()
+{
 
   if (Serial1.available())
   {
     int inByte = Serial1.read();
     Serial.write(inByte);
-    if (inByte == 111) {
+    if (inByte == 111)
+    {
       String ser = String("AZ:" + String(azAngle) + "#EL:" + String(elAngle) + "#OP:" + String(operate) + "#AZARROW:" + String(azArrow) + "#ELARROW:" + String(elArrow) + "#MODE:" + String(mode));
       Serial1.println(ser);
     }
@@ -384,27 +409,28 @@ void down(boolean elMoveFlag)
   }
 }
 
-int stabilitySensor(int SENSOR) {
+int stabilitySensor(int SENSOR)
+{
 
   int currentValue = SENSOR;
   int prevValue;
   if (currentValue != prevValue)
   {
 
-    if (millis() - timing > 10000) { // Вместо 10000 подставьте нужное вам значение паузы
+    if (millis() - timing > 10000)
+    { // Вместо 10000 подставьте нужное вам значение паузы
       timing = millis();
       currentValue = SENSOR;
       return currentValue;
     }
-
   }
 
   prevValue = currentValue;
   // return prevValue;
-
 }
 
-void applyKeys() {
+void applyKeys()
+{
   if (operate)
   {
     if (btn(BTN_APPLY_AZ) == 0)
@@ -422,16 +448,18 @@ void applyKeys() {
 }
 
 // Views display func
-void operateView() {
-  if (operate) {
+void operateView()
+{
+  if (operate)
+  {
 
-    for (int i = 0; i <= 2; i++) {
+    for (int i = 0; i <= 2; i++)
+    {
       if (millis() - previousMillisTimeSWOne >= intervalTimeSWOne)
       {
         iOperateView = !iOperateView;
         previousMillisTimeSWOne = previousMillisTimeSWOne + intervalTimeSWOne;
       }
-
 
       if (millis() - previousMillisTimeSWTwo >= intervalTimeSWTwo)
       {
@@ -439,21 +467,28 @@ void operateView() {
         previousMillisTimeSWTwo = previousMillisTimeSWTwo + intervalTimeSWTwo;
       }
 
-      if (azMove || elMove) {
-        if (iOperateView == 1) {
+      if (azMove || elMove)
+      {
+        if (iOperateView == 1)
+        {
           lcd.setCursor(17, 3);
           lcd.print(char(1));
         }
-        if (iOperateView == 0) {
+        if (iOperateView == 0)
+        {
           lcd.setCursor(17, 3);
           lcd.print(" ");
         }
-      } else {
+      }
+      else
+      {
         lcd.setCursor(17, 3);
         lcd.print(char(1));
       }
     }
-  } else {
+  }
+  else
+  {
     lcd.setCursor(17, 3);
     lcd.print(" ");
     lcd.setCursor(18, 3);
@@ -463,53 +498,73 @@ void operateView() {
   }
 }
 
-void modeView() {
-  if (mode == 1) {
+void modeView()
+{
+  if (mode == 1)
+  {
     lcd.setCursor(0, 3);
     lcd.print("PC           ");
     lcd.setCursor(0, 2);
-    //lcd.print("SN: ");
-    //lcd.setCursor(4, 2);
-    //lcd.setCursor(0, 2);
-    //lcd.print(Serial1Name);
-  } else if (mode == 0) {
+    // lcd.print("SN: ");
+    // lcd.setCursor(4, 2);
+    // lcd.setCursor(0, 2);
+    // lcd.print(Serial1Name);
+  }
+  else if (mode == 0)
+  {
     lcd.setCursor(0, 3);
     lcd.print("MANUAL       ");
-  } else  if (mode == 2) {
+  }
+  else if (mode == 2)
+  {
     lcd.setCursor(0, 3);
     lcd.print("BUTTON MANUAL");
   }
 }
 
-void azArrowView() {
-  if (azArrow == 0) {
+void azArrowView()
+{
+  if (azArrow == 0)
+  {
     lcd.setCursor(18, 3);
     lcd.print(" ");
-  } else if (azArrow == 1) {
+  }
+  else if (azArrow == 1)
+  {
     lcd.setCursor(18, 3);
     lcd.print(">");
-  } else if (azArrow == 2) {
+  }
+  else if (azArrow == 2)
+  {
     lcd.setCursor(18, 3);
     lcd.print("<");
   }
 }
 
-void elArrowView() {
+void elArrowView()
+{
 
-  if (elArrow == 0 ) {
+  if (elArrow == 0)
+  {
     lcd.setCursor(19, 3);
     lcd.print(" ");
-  } else if (elArrow == 1 ) {
+  }
+  else if (elArrow == 1)
+  {
     lcd.setCursor(19, 3);
     lcd.print(char(2));
-    //lcd.print("U");
-  } else if (elArrow == 2) {
+    // lcd.print("U");
+  }
+  else if (elArrow == 2)
+  {
     lcd.setCursor(19, 3);
     lcd.print(char(3));
   }
 }
-void SerialSend() {
-  if (prevAz != azAngle || prevEl != elAngle ||  prevAzArrow != azArrow || prevElArrow != elArrow || prevMode != mode || prevOperate != operate) {
+void SerialSend()
+{
+  if (prevAz != azAngle || prevEl != elAngle || prevAzArrow != azArrow || prevElArrow != elArrow || prevMode != mode || prevOperate != operate)
+  {
     String ser = String("AZ:" + String(azAngle) + "#EL:" + String(elAngle) + "#OP:" + String(operate) + "#AZARROW:" + String(azArrow) + "#ELARROW:" + String(elArrow) + "#MODE:" + String(mode));
     Serial1.println(ser);
     prevEl = elAngle;
@@ -547,15 +602,14 @@ void setup()
   lcd.backlight();
 #endif
 
-
   lcd.setCursor(0, 0);
   lcd.createChar(1, heart);
   lcd.createChar(2, upArrow);
   lcd.createChar(3, dwArrow);
 
-
   // lcd.print("R8CDF ROTATOR 2020 ");
-  for (int i = 0; i <= 19; i++) {
+  for (int i = 0; i <= 19; i++)
+  {
     lcd.setCursor(i, 1);
     lcd.print("_");
     delay(150);
@@ -565,7 +619,8 @@ void setup()
   }
 
   delay(1000);
-  for (int i = 0; i <= 19; i++) {
+  for (int i = 0; i <= 19; i++)
+  {
     lcd.setCursor(i, 1);
     lcd.print(" ");
     delay(1);
@@ -600,7 +655,8 @@ void loop()
 
   if (operate)
   {
-    if (mode == 1) {
+    if (mode == 1)
+    {
       if (Serial1.available())
       {
         PortRead = Serial1.readString();
@@ -632,12 +688,14 @@ void loop()
       }
     }
 
-    if (mode == 0) {
+    if (mode == 0)
+    {
       applyKeys();
       getKeysMain();
     }
 
-    if (mode == 2) {
+    if (mode == 2)
+    {
       buttonManual(azAngle, elAngle);
 
       if (Serial1.available())
@@ -651,7 +709,9 @@ void loop()
         {
           digitalWrite(PIN_CW, HIGH);
           azArrow = 1;
-        } else {
+        }
+        else
+        {
           digitalWrite(PIN_CW, LOW);
           azArrow = 0;
         }
@@ -660,7 +720,9 @@ void loop()
         {
           digitalWrite(PIN_CCW, HIGH);
           azArrow = 2;
-        } else {
+        }
+        else
+        {
           digitalWrite(PIN_CCW, LOW);
           // azArrow = 0;
         }
@@ -669,7 +731,9 @@ void loop()
         {
           digitalWrite(PIN_UP, HIGH);
           elArrow = 1;
-        } else {
+        }
+        else
+        {
           digitalWrite(PIN_UP, LOW);
           elArrow = 0;
         }
@@ -678,12 +742,13 @@ void loop()
         {
           digitalWrite(PIN_DOWN, HIGH);
           elArrow = 2;
-        } else {
+        }
+        else
+        {
           digitalWrite(PIN_DOWN, LOW);
           //  elArrow = 0;
         }
       }
-
     }
 
     if (azMove)
@@ -694,10 +759,12 @@ void loop()
         digitalWrite(PIN_CW, LOW);
         digitalWrite(PIN_CCW, LOW);
         azMove = false;
-      } else if (azTarget - azAngle >= 1)
+      }
+      else if (azTarget - azAngle >= 1)
       {
         cw(azMove);
-      } else if (azAngle - azTarget >= 1)
+      }
+      else if (azAngle - azTarget >= 1)
       {
         ccw(azMove);
       }
@@ -714,12 +781,13 @@ void loop()
       }
       if (elTarget - elAngle >= 1)
       {
-        up(elMove);
+        
+        down(elMove);
       }
 
       if (elAngle - elTarget >= 1)
       {
-        down(elMove);
+        up(elMove);
       }
     }
   }
