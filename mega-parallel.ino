@@ -19,7 +19,6 @@
 //Переделать с 19 на 20
 #define BTN_OPERATE 20
 #define BTN_MODE 21
-
 int prevAz = 0;
 int prevEl = 0;
 bool prevOperate;
@@ -179,7 +178,7 @@ void getKeysMain()
   if (btn(BTN_UP) == 0)
   {
     delay(10);
-    if (elTarget + STEP <= 95)
+    if (elTarget + STEP <= 90)
       elTarget += STEP;
   }
 
