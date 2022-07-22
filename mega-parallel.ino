@@ -64,7 +64,7 @@ const byte averageFactor = 20;
 byte azArrow = 0;
 byte elArrow = 0;
 
-char motd[] = " R8CDF ROTATOR 2020 ";
+char motd[] = "R8CDF ROTATOR 22R1  ";
 byte heart[8] = {0b00000, 0b01010, 0b11111, 0b11111, 0b11111, 0b01110, 0b00100, 0b00000};
 byte heartOff[8] = {0b00000, 0b01010, 0b11111, 0b11111, 0b11111, 0b01110, 0b00100, 0b00000};
 byte upArrow[8] = {0b00000, 0b00000, 0b00100, 0b01010, 0b10001, 0b00000, 0b00000, 0b00000};
@@ -117,7 +117,7 @@ int azSensor()
 {
 
   azAngle = avaregeAprox(analogRead(AZSENSOR));
-  azAngle = int(azAngle / 1014.0 * 360);
+  azAngle = int(azAngle / 1024.0 * 360);
 
   if (azAngle < 0)
   {
@@ -135,12 +135,12 @@ int azSensor()
 int elSensor()
 {
   elAngle = avaregeAprox(stabilitySensor(analogRead(ELSENSOR)));
-  elAngle = int(elAngle / 1014.0 * 360);
+  elAngle = int(elAngle / 1024.0 * 278);
   if (elAngle < 0)
   {
     elAngle = 0;
   }
-  if (elAngle > 100)
+  if (elAngle > 180)
   {
     elAngle = 0;
   }
@@ -264,7 +264,7 @@ void buttonManual(int az, int el) {
     azArrow = 0;
   }
 
-  if (btn(BTN_CCW) == 0 && az > 1)
+  if (btn(BTN_CCW) == 0 && az >= 0)
   {
     digitalWrite(PIN_CCW, HIGH);
     azArrow = 2;
@@ -273,7 +273,7 @@ void buttonManual(int az, int el) {
     // azArrow = 0;
   }
 
-  if (btn(BTN_UP) == 0 && el <= 99)
+  if (btn(BTN_UP) == 0 && el <= 140)
   {
     digitalWrite(PIN_UP, HIGH);
     elArrow = 1;

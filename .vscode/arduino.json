@@ -1,5 +1,5 @@
 {
-    "port": "COM3",
+    "port": "COM4",
     "board": "arduino:avr:mega",
     "configuration": "cpu=atmega2560",
     "sketch": "mega-parallel.ino"
