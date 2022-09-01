@@ -39,11 +39,14 @@ int azCorrect = 0;        // Коррекция азимута нуля град
 int oldsensorValue = 0;
 int totalAz = 0;
 int averageAz = 0; // усреднение азимута
-
+int correctionAz = 10;
 int elAngle = 0;
 int elOldSensorValue = 0;
 int elTarget = 0;
+boolean overlap = false;
+boolean noLimit = true;
 boolean elMove = false;
+String strOverlap = "no";
 String strElAngle;
 String strElTarget;
 int elCorrect = 0;
@@ -57,7 +60,7 @@ byte mode = 0;
 String PortRead;
 int azPortTarget = 0;
 int elPortTarget = 0;
-const byte averageFactor = 20;
+const byte averageFactor = 30;
 // String Serial1Name = "                ";
 // 0 - clear, 1 - CW or UP, 2 - CCW or DOWN
 byte azArrow = 0;
@@ -116,16 +119,31 @@ int azSensor()
 {
 
   azAngle = avaregeAprox(analogRead(AZSENSOR));
-  azAngle = int(azAngle / 1008.0 * 360);
+  azAngle = int(azAngle / 1024.0 * 360) + correctionAz;
 
-  if (azAngle < 1)
+  if (azAngle >= 0 && azAngle <= 360)
   {
+    strOverlap = "no";
+    overlap = false;
+  }
+
+  if (azAngle == 3)
+  {
+    overlap = true;
     azAngle = 1;
   }
 
-  if (azAngle >= 359)
+  if (azAngle < 3)
   {
-    azAngle = 359;
+    strOverlap = "overlap <";
+    azAngle = 1;
+  }
+
+  if (azAngle >= 360)
+  {
+    overlap = true;
+    strOverlap = "overlap >";
+    azAngle = 360;
   }
 
   return azAngle;
@@ -134,21 +152,22 @@ int azSensor()
 int elSensor()
 {
   elAngle = avaregeAprox(stabilitySensor(analogRead(ELSENSOR)));
-  elAngle = int(elAngle / 1024.0 * 277);
-  if (elAngle < 0)
-  {
-    elAngle = 0;
-  }
+  // elAngle = int(elAngle / 1024.0 * 277);
+  elAngle = 180 - int(elAngle / 1024.0 * 180);
+  // if (elAngle < 0)
+  // {
+  //   elAngle = 0;
+  // }
 
-  if (elAngle >= 89 && elAngle <= 91)
-  {
-    elAngle = 90;
-  }
+  // if (elAngle >= 89 && elAngle <= 91)
+  // {
+  //   elAngle = 90;
+  // }
 
-  if (elAngle >= 110 && elAngle <= 271)
-  {
-    elAngle = 0;
-  }
+  // if (elAngle >= 110 && elAngle <= 360)
+  // {
+  //   elAngle = 0;
+  // }
 
   return elAngle;
 }
@@ -164,7 +183,7 @@ void getKeysMain()
   if (btn(BTN_CW) == 0)
   {
     delay(1);
-    if (azTarget + STEP <= 358)
+    if (azTarget + STEP <= 360)
       azTarget += STEP;
   }
 
@@ -178,7 +197,7 @@ void getKeysMain()
   if (btn(BTN_UP) == 0)
   {
     delay(10);
-    if (elTarget + STEP <= 90)
+    if (elTarget + STEP <= 360)
       elTarget += STEP;
   }
 
@@ -266,7 +285,7 @@ void getKeysOperate()
 void buttonManual(int az, int el)
 {
 
-  if (btn(BTN_CW) == 0 && az < 358)
+  if (btn(BTN_CW) == 0 && az < 450)
   {
     digitalWrite(PIN_CW, HIGH);
     azArrow = 1;
@@ -288,7 +307,7 @@ void buttonManual(int az, int el)
     // azArrow = 0;
   }
 
-  if (btn(BTN_DOWN) == 0 && el <= 110)
+  if (btn(BTN_DOWN) == 0 && el <= 360)
   {
     digitalWrite(PIN_UP, HIGH);
     elArrow = 2;
@@ -301,7 +320,7 @@ void buttonManual(int az, int el)
 
   if (btn(BTN_UP) == 0 && el >= 0)
   {
-    if (el <= 89)
+    if (el <= 90)
     {
       digitalWrite(PIN_DOWN, HIGH);
       elArrow = 1;
@@ -329,7 +348,29 @@ void serialManual()
   }
 }
 
-String AzElString(int someIntVolue)
+String IntAzToString(int someIntVolue)
+{
+  if (someIntVolue < 0)
+  {
+    return "" + String(someIntVolue);
+  }
+  if (someIntVolue < 10)
+  {
+    return "  " + String(someIntVolue);
+  }
+
+  if (someIntVolue < 100)
+  {
+    return " " + String(someIntVolue);
+  }
+
+  if (someIntVolue >= 100)
+  {
+    return String(someIntVolue);
+  }
+}
+
+String IntElToString(int someIntVolue)
 {
   if (someIntVolue < 0)
   {
@@ -416,7 +457,7 @@ int stabilitySensor(int SENSOR)
   if (currentValue != prevValue)
   {
 
-    if (millis() - timing > 10000)
+    if (millis() - timing > 50000)
     { // Вместо 10000 подставьте нужное вам значение паузы
       timing = millis();
       currentValue = SENSOR;
@@ -607,23 +648,23 @@ void setup()
   lcd.createChar(3, dwArrow);
 
   // lcd.print("R8CDF ROTATOR 2020 ");
-  for (int i = 0; i <= 19; i++)
-  {
-    lcd.setCursor(i, 1);
-    lcd.print("_");
-    delay(150);
-    lcd.setCursor(i, 1);
-    lcd.print(motd[i]);
-    delay(30);
-  }
+  // for (int i = 0; i <= 19; i++)
+  // {
+  //   lcd.setCursor(i, 1);
+  //   lcd.print("_");
+  //   delay(150);
+  //   lcd.setCursor(i, 1);
+  //   lcd.print(motd[i]);
+  //   delay(30);
+  // }
 
-  delay(1000);
-  for (int i = 0; i <= 19; i++)
-  {
-    lcd.setCursor(i, 1);
-    lcd.print(" ");
-    delay(1);
-  }
+  delay(100);
+  // for (int i = 0; i <= 19; i++)
+  // {
+  //   lcd.setCursor(i, 1);
+  //   lcd.print(" ");
+  //   delay(1);
+  // }
   lcd.setCursor(0, 0);
   lcd.print("                ");
   lcd.setCursor(0, 0);
@@ -704,7 +745,7 @@ void loop()
         lcd.setCursor(0, 2);
         lcd.print(inByte);
 
-        if (inByte == 62 && azAngle < 360)
+        if (inByte == 62 && azAngle < 359)
         {
           digitalWrite(PIN_CW, HIGH);
           azArrow = 1;
@@ -780,7 +821,7 @@ void loop()
       }
       if (elTarget - elAngle >= 1)
       {
-        
+
         down(elMove);
       }
 
@@ -798,9 +839,9 @@ void loop()
   lcd.setCursor(5, 1);
   lcd.print(strAzAngle);
   // Отображение данных с датчика азимута
-  strAzAngle = AzElString(azAngle);
+  strAzAngle = IntAzToString(azAngle);
   // Отображение цели азимута
-  strAzTarget = AzElString(azTarget);
+  strAzTarget = IntAzToString(azTarget);
 
   // Отображение елевации цели антенны
   lcd.setCursor(13, 0);
@@ -809,7 +850,7 @@ void loop()
   lcd.setCursor(13, 1);
   lcd.print(strElAngle);
   // Отображение данных с датчика элевации
-  strElAngle = AzElString(elAngle);
+  strElAngle = IntElToString(elAngle);
   // Отображение цели элевации
-  strElTarget = AzElString(elTarget);
+  strElTarget = IntElToString(elTarget);
 }
